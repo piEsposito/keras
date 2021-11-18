@@ -70,6 +70,10 @@ py_library(
         "//keras/utils:mode_keys",
         "//keras/utils:tf_utils",
         "//keras/utils:version_utils",
+        "//third_party/tensorflow/compiler/jit",
+        "//third_party/tensorflow/compiler/jit:xla_cpu_jit",
+        "//third_party/tensorflow/compiler/jit:xla_gpu_jit",
+        "//third_party/tensorflow/compiler/jit:xla_tpu_jit",
     ],
 )
 
@@ -374,6 +378,10 @@ tf_py_test(
         "//keras/layers",
         "//keras/utils:data_utils",
         "//keras/utils:np_utils",
+        "//third_party/tensorflow/compiler/jit",
+        "//third_party/tensorflow/compiler/jit:xla_cpu_jit",
+        "//third_party/tensorflow/compiler/jit:xla_gpu_jit",
+        "//third_party/tensorflow/compiler/jit:xla_tpu_jit",
     ],
 )
 
