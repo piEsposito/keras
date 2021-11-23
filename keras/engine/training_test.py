@@ -1772,6 +1772,28 @@ class TrainingTest(keras_parameterized.TestCase):
     self.assertNotEqual(self.evaluate(initial_result),
                         self.evaluate(after_fit_result))
 
+  @keras_parameterized.run_all_keras_modes(always_skip_v1=True)
+  def test_custom_compute_losses(self):
+
+    class MyModel(sequential.Sequential):
+
+      def compute_losses(self, x, y, y_pred, sample_weight):
+        losses_results = super(MyModel,
+                               self).compute_losses(x, y, y_pred, sample_weight)
+        self.custom_loss.assign_add(losses_results)
+        return losses_results
+
+    tensors = tf.random.uniform((10, 10)), tf.random.uniform((10,))
+    dataset = tf.data.Dataset.from_tensor_slices(tensors).repeat().batch(1)
+    model = MyModel([layers_module.Dense(10)])
+    model.custom_loss = tf.Variable(0, dtype=tf.float32)
+    self.assertLess(self.evaluate(model.custom_loss), 0.5)
+
+    optimizer = optimizer_v2.gradient_descent.SGD()
+    model.compile(optimizer, loss='mse', steps_per_execution=10)
+    model.fit(dataset, epochs=2, steps_per_epoch=10, verbose=2)
+    self.assertGreater(self.evaluate(model.custom_loss), 1.0)
+
 
 class TestExceptionsAndWarnings(keras_parameterized.TestCase):
 

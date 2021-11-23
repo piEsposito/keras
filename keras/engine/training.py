@@ -839,12 +839,49 @@ class Model(base_layer.Layer, version_utils.ModelVersionSelector):
     # Run forward pass.
     with tf.GradientTape() as tape:
       y_pred = self(x, training=True)
-      loss = self.compiled_loss(
-          y, y_pred, sample_weight, regularization_losses=self.losses)
-    self._validate_target_and_loss(y, loss)
+      loss = self.compute_losses(x, y, y_pred, sample_weight)
     # Run backwards pass.
     self.optimizer.minimize(loss, self.trainable_variables, tape=tape)
     return self.compute_metrics(x, y, y_pred, sample_weight)
+
+  def compute_losses(self, x, y, y_pred, sample_weight):
+    """Compute the total losses, validate, and return them.
+
+    Subclasses can optionally override this method to provide custom losses
+    computation logic.
+
+    Example:
+    ```python
+    class MyModel(sequential.Sequential):
+
+      def compute_losses(self, x, y, y_pred, sample_weight):
+        losses_results = super(MyModel,
+                               self).compute_losses(x, y, y_pred, sample_weight)
+        self.custom_loss.assign_add(losses_results)
+        return losses_results
+
+    model = ...
+    model.custom_loss = tf.Variable(0, dtype=tf.float32)
+    optimizer = optimizer_v2.gradient_descent.SGD()
+    model.compile(optimizer, loss='mse', steps_per_execution=10)
+    model.fit(dataset, epochs=2, steps_per_epoch=10, verbose=2)
+    print("My custom loss:", model.custom_loss.numpy())
+    ```
+
+    Args:
+      x: Input data.
+      y: Target data.
+      y_pred: Predictions returned by the model (output of `model.call(x)`)
+      sample_weight: Sample weights for weighting the loss function.
+
+    Returns:
+      The total loss as a `tf.Tensor`, or `None` if no loss results.
+    """
+    del x  # The default implementation does not use `x`.
+    loss = self.compiled_loss(
+        y, y_pred, sample_weight, regularization_losses=self.losses)
+    self._validate_target_and_loss(y, loss)
+    return loss
 
   def compute_metrics(self, x, y, y_pred, sample_weight):
     """Update metric states and collect all metrics to be returned.
